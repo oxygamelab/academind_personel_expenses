@@ -4,15 +4,15 @@ import '../models/transaction.dart';
 
 class TransactionList extends StatelessWidget {
   final List<Transaction> transaction;
+  final Function deleteTransactionHandler;
 
-  TransactionList(this.transaction);
+  TransactionList(this.transaction, this.deleteTransactionHandler);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 300,
-      child: transaction.isEmpty
-          ? Column(
+    return transaction.isEmpty
+        ? LayoutBuilder(builder: (ctx, constraints) {
+            return Column(
               children: <Widget>[
                 Text(
                   'No transactions added yet!',
@@ -20,62 +20,58 @@ class TransactionList extends StatelessWidget {
                 ),
                 SizedBox(height: 20),
                 Container(
-                  height: 200,
+                  height: constraints.maxHeight * 0.6,
                   child: Image.asset(
                     'assets/img/waiting.png',
                     fit: BoxFit.cover,
                   ),
                 ),
               ],
-            )
-          : ListView.builder(
-              itemBuilder: (BuildContext context, int index) {
-                return Card(
-                  child: Row(
-                    children: <Widget>[
-                      Container(
-                        margin: EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 15,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.all(Radius.circular(6)),
-                        ),
-                        padding: EdgeInsets.all(10),
+            );
+          })
+        : ListView.builder(
+            itemBuilder: (BuildContext context, int index) {
+              return Card(
+                elevation: 3,
+                margin: EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    radius: 30,
+                    child: Padding(
+                      padding: EdgeInsets.all(8),
+                      child: FittedBox(
                         child: Text(
-                          '\$${transaction[index].amount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                          '\$${transaction[index].amount}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            transaction[index].title,
-                            style: Theme.of(context).textTheme.headline6,
-                          ),
-                          Text(
-                            DateFormat.yMd().format(transaction[index].date),
-                            style: TextStyle(
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      )
-                    ],
+                    ),
                   ),
-                );
-              },
-              itemCount: transaction.length,
-            ),
-    );
+                  title: Text(
+                    transaction[index].title,
+                    style: Theme.of(context).textTheme.headline6,
+                  ),
+                  subtitle: Text(
+                    DateFormat.yMMMd('tr').format(transaction[index].date),
+                  ),
+                  trailing: MediaQuery.of(context).size.width > 460
+                      ? FlatButton.icon(
+                          icon: Icon(Icons.delete),
+                          label: Text('Delete'),
+                          textColor: Theme.of(context).errorColor,
+                          onPressed: () =>
+                              deleteTransactionHandler(transaction[index].id),
+                        )
+                      : IconButton(
+                          color: Theme.of(context).errorColor,
+                          icon: Icon(Icons.delete),
+                          onPressed: () =>
+                              deleteTransactionHandler(transaction[index].id),
+                        ),
+                ),
+              );
+            },
+            itemCount: transaction.length,
+          );
   }
 }
