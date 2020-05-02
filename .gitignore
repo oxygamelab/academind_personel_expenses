@@ -48,5 +48,5 @@ ios/
 test/
 web/
 .metadata
-.pubspec.lock
+pubspec.lock
 README.md
