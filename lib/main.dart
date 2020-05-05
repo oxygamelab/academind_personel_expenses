@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 //import 'package:flutter/services.dart';
 import './widgets/chart.dart';
@@ -123,28 +126,53 @@ class _MyHomePageState extends State<MyHomePage> {
     final mediaQuery = MediaQuery.of(context);
     final isLandscape = mediaQuery.orientation == Orientation.landscape;
 
-    final appBar = AppBar(
-      title: Text('Personel Expenses App'),
-      actions: <Widget>[
-        IconButton(
-          icon: Icon(Icons.add, color: Colors.white),
-          onPressed: () => _startAddNewTransaction(context),
+    Widget _buildIosAppbar() {
+      return CupertinoNavigationBar(
+        middle: Text('Personel Expenses App'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            CupertinoButton(
+              child: Icon(CupertinoIcons.add),
+              onPressed: () => _startAddNewTransaction(context),
+            ),
+          ],
         ),
-      ],
-    );
+      );
+    }
+
+    Widget _buildAndroidAppbar() {
+      return AppBar(
+        title: Text('Personel Expenses App'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.add, color: Colors.white),
+            onPressed: () => _startAddNewTransaction(context),
+          ),
+        ],
+      );
+    }
+
+    final PreferredSizeWidget appBar =
+        Platform.isIOS ? _buildIosAppbar() : _buildAndroidAppbar();
 
     final chartSwitch = Container(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Text('Show Chart'),
-          Switch(
-              value: _showChart,
-              onChanged: (val) {
-                setState(() {
-                  _showChart = val;
-                });
-              }),
+          Text(
+            'Show Chart',
+            style: Theme.of(context).textTheme.title,
+          ),
+          Switch.adaptive(
+            activeColor: Theme.of(context).accentColor,
+            value: _showChart,
+            onChanged: (val) {
+              setState(() {
+                _showChart = val;
+              });
+            },
+          ),
         ],
       ),
     );
@@ -157,42 +185,69 @@ class _MyHomePageState extends State<MyHomePage> {
       child: TransactionList(_userTransactions, _deleteTransaction),
     );
 
-    return Scaffold(
-      appBar: appBar,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (isLandscape) chartSwitch,
-            if (!isLandscape)
-              Container(
+    List<Widget> _buildLandscapeContent() {
+      return [
+        chartSwitch,
+        _showChart
+            ? Container(
                 height: (mediaQuery.size.height -
                         appBar.preferredSize.height -
                         mediaQuery.padding.top) *
-                    0.3,
+                    0.6,
                 width: double.infinity,
                 child: Chart(_recentTransactions),
-              ),
-            if (!isLandscape) txListWidget,
-            if (isLandscape)
-              _showChart
-                  ? Container(
-                      height: (mediaQuery.size.height -
-                              appBar.preferredSize.height -
-                              mediaQuery.padding.top) *
-                          0.6,
-                      width: double.infinity,
-                      child: Chart(_recentTransactions),
-                    )
-                  : txListWidget,
+              )
+            : txListWidget,
+      ];
+    }
+
+    List<Widget> _buildPortraitContent() {
+      return [
+        Container(
+          height: (mediaQuery.size.height -
+                  appBar.preferredSize.height -
+                  mediaQuery.padding.top) *
+              0.3,
+          width: double.infinity,
+          child: Chart(_recentTransactions),
+        ),
+        txListWidget
+      ];
+    }
+
+    final pageBody = SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (isLandscape) ..._buildLandscapeContent(),
+            if (!isLandscape) ..._buildPortraitContent(),
           ],
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add, color: Colors.white),
-        onPressed: () => _startAddNewTransaction(context),
-      ),
     );
+
+    Widget _buildIosContent() {
+      return CupertinoPageScaffold(
+        child: pageBody,
+        navigationBar: _buildIosAppbar(),
+      );
+    }
+
+    Widget _buildAndroidContent() {
+      return Scaffold(
+        appBar: _buildAndroidAppbar(),
+        body: pageBody,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: Platform.isIOS
+            ? Container()
+            : FloatingActionButton(
+                child: Icon(Icons.add, color: Colors.white),
+                onPressed: () => _startAddNewTransaction(context),
+              ),
+      );
+    }
+
+    return Platform.isIOS ? _buildIosContent() : _buildAndroidContent();
   }
 }
